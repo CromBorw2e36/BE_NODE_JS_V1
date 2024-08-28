@@ -1,3 +1,4 @@
+const commonBase = require("../common/commonBase");
 const { query, ExecQuery } = require("../common/db/dbConnection");
 const ExecCommonDB = require("../common/db/ExecCommonDB");
 const STRING_QUERY = require("../common/enum/queryString");
@@ -6,6 +7,7 @@ const RES_MESSENGER = require("../common/enum/resultMsgString");
 const TABLE_NAME = require("../common/enum/tableString");
 const StatusMessage = require("../models/respondStatus");
 const UserModel = require("../models/UserModel");
+const UserUpdateModel = require("../models/userUPdateModel");
 
 class UserService {
   constructor() {}
@@ -22,30 +24,46 @@ class UserService {
       return new StatusMessage(RES_STATUS.ERROR, "Please enter a username", newModel);
     }
 
-    let qString = ExecCommonDB.setTableName(TABLE_NAME.USER)
-      .setTypeAction(STRING_QUERY.ExecQuery_Insert)
-      .setData(newModel)
-      .GetQuery();
+    let qStringDataExists = ExecCommonDB.setQueryString(STRING_QUERY.LoginSearchUserByUsername)
+      .setConditions({ username: newModel.username })
+      .GetQuerySelect();
+    const dataExists = await query(qStringDataExists);
 
     try {
-      // const data = await query(qString);
-      return new StatusMessage(RES_STATUS.SUCCESS, RES_MESSENGER.INSERT_SUCCESS, qString);
+      if (dataExists.length > 0) {
+        return new StatusMessage(
+          RES_STATUS.INSERT_FAILED,
+          RES_MESSENGER.INSERT_USER_NAME_EXIST,
+          newModel
+        );
+      } else {
+        newModel.password = commonBase.getMD5String(newModel.password);
+        let qString = ExecCommonDB.setTableName(TABLE_NAME.USER)
+          .setTypeAction(STRING_QUERY.ExecQuery_Insert)
+          .setData(newModel)
+          .GetQuery();
+
+        try {
+          const data = await query(qString);
+          return new StatusMessage(RES_STATUS.SUCCESS, RES_MESSENGER.INSERT_SUCCESS, newModel);
+        } catch (err) {
+          console.log(err.message);
+          return new StatusMessage(RES_STATUS.ERROR, RES_MESSENGER.INSERT_FAILED, newModel);
+        }
+      }
     } catch (err) {
-      console.log(err.message);
-      return new StatusMessage(RES_STATUS.ERROR, err.message, newModel);
+      return new StatusMessage(RES_STATUS.ERROR, RES_MESSENGER.INSERT_FAILED, newModel);
     }
   }
   async Update(model) {
-    const newModel = new UserModel(...model);
+    const newModel = new UserUpdateModel(model);
 
     if (!newModel?.username) {
       return new StatusMessage(RES_STATUS.ERROR, "Please enter a username", newModel);
-    } else if (!newModel?.password) {
-      return new StatusMessage(RES_STATUS.ERROR, "Please enter a username", newModel);
     } else if (!newModel?.full_name) {
-      return new StatusMessage(RES_STATUS.ERROR, "Please enter a username", newModel);
+      return new StatusMessage(RES_STATUS.ERROR, "Please enter a full name", newModel);
     } else if (!newModel?.email) {
-      return new StatusMessage(RES_STATUS.ERROR, "Please enter a username", newModel);
+      return new StatusMessage(RES_STATUS.ERROR, "Please enter a email", newModel);
     }
 
     let qString = ExecCommonDB.setTableName(TABLE_NAME.USER)
@@ -63,7 +81,7 @@ class UserService {
     }
   }
   async Get(model) {
-    const newModel = new UserModel(...model);
+    const newModel = new UserModel(model);
 
     if (!newModel.username) {
       return new StatusMessage(RES_STATUS.ERROR, "Please enter a username", newModel);
@@ -99,7 +117,7 @@ class UserService {
     }
   }
   async Delete(model) {
-    const newModel = new UserModel(...model);
+    const newModel = new UserModel(model);
 
     if (!newModel.username) {
       return new StatusMessage(RES_STATUS.ERROR, "Please enter a username", newModel);
@@ -121,7 +139,7 @@ class UserService {
     }
   }
   async DeleteEx(model) {
-    const newModel = new UserModel(...model);
+    const newModel = new UserModel(model);
 
     if (!newModel.username) {
       return new StatusMessage(RES_STATUS.ERROR, "Please enter a username", newModel);

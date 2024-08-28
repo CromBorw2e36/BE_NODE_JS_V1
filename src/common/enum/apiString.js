@@ -5,5 +5,8 @@ class API_STRING {
   static User_Update = "/Users/Update";
   static User_Delete = "/Users/Delete";
   static User_Delete_ADMIN = "/Users/DeleteEX";
+  static LoginServerTypeOne = "/Login-Server-Type-One";
+  static LoginServerForgetPassword = "/Login-Server-forget-password";
+  static LoginServerUpdatePassword = "/Login-Server-update-password";
 }
 module.exports = API_STRING;

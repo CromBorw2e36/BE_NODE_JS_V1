@@ -7,6 +7,7 @@ class ExecCommonDB {
   typeAction = undefined;
   data = undefined;
   conditions = undefined;
+  queryString = undefined; // for select queries
 
   constructor() {}
 
@@ -22,6 +23,11 @@ class ExecCommonDB {
 
   setData(data) {
     this.data = data;
+    return this;
+  }
+
+  setQueryString(queryString) {
+    this.queryString = queryString;
     return this;
   }
 
@@ -50,7 +56,7 @@ class ExecCommonDB {
         let str1 = `${this.typeAction} ${this.tableName} ( `;
         let str2 = " VALUES (";
         for (let [key, value] of Object.entries(this.data)) {
-          value = this.formatOutputValue(value)
+          value = this.formatOutputValue(value);
           str1 += `${flag_1 ? "," : ""} ${key?.toUpperCase()}`;
           str2 += `${flag_1 ? "," : ""} ${value}`;
           flag_1 = true;
@@ -61,7 +67,7 @@ class ExecCommonDB {
       case STRING_QUERY.ExecQuery_Update: {
         let str1 = `${this.typeAction} ${this.tableName} set `;
         for (let [key, value] of Object.entries(this.data)) {
-          value = this.formatOutputValue(value)
+          value = this.formatOutputValue(value);
           str1 += `${flag_1 ? "," : ""}${key.toUpperCase()} = ${value}`;
           flag_1 = true;
         }
@@ -69,7 +75,7 @@ class ExecCommonDB {
         if (this.conditions) {
           str1 += " WHERE id = id";
           for (let [key, value] of Object.entries(this.conditions)) {
-            value = this.formatOutputValue(value)
+            value = this.formatOutputValue(value);
             str1 += `${key.toUpperCase()} = ${value}`;
           }
         }
@@ -100,6 +106,34 @@ class ExecCommonDB {
         queryString = "";
     }
     return queryString;
+  }
+
+  GetQuerySelect() {
+    if (this.conditions) {
+      return this.GetQuerySelectWithConditions(this.queryString, this.conditions);
+    } else {
+      return "";
+    }
+  }
+
+  GetQuerySelectWithConditions(stringQuery, conditionsModel) {
+    for (const [key, value] of Object.entries(conditionsModel)) {
+      switch (typeof value) {
+        case "string": {
+          stringQuery = stringQuery.replaceAll(`<${key}>`, `'${value}'`);
+          break;
+        }
+        case "boolean": {
+          stringQuery = stringQuery.replaceAll(`<${key}>`, value ? 1 : 0);
+          break;
+        }
+        case "number": {
+          stringQuery = stringQuery.replaceAll(`<${key}>`, value);
+          break;
+        }
+      }
+    }
+    return stringQuery;
   }
 }
 
